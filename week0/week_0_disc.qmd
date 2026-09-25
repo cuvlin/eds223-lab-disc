@@ -1,0 +1,83 @@
+### Install Packages
+```{r}
+packages <- c("here", "janitor", "tidyverse", "sf", "terra", "tmap", "spData", "spDataLarge", "geodata", "kableExtra", "viridisLite")
+installed_packages <- packages %in% rownames(installed.packages())
+
+if (any(installed_packages == FALSE)) {
+  install.packages(packages[!installed_packages])
+}
+```
+```{r}
+library(here)
+library(janitor)
+library(tidyverse)
+library(sf)
+library(kableExtra)
+```
+
+### Load Data
+
+```{r}
+gdw_df <- read_csv('/Users/cuvlin/Documents/MEDS/eds223/eds223-lab-disc/week0/data/gdw.csv') |> 
+    clean_names()
+
+```
+
+### Data Exploration
+
+```{r}
+gdw_df |> head(n=10) |> kable() # head
+gdw_df |> tail(n=10) |>  kable() # tail
+
+print(dim(gdw_df))
+print(colnames(gdw_df))
+```
+
+### Index, Summarize, Subset Data
+
+```{r}
+country_df <- gdw_df['country']
+country_vector <- gdw_df[['country']]
+
+dam_groups <- gdw_df |> 
+    group_by(dam_type) |>
+     summarise(count = n())
+
+dam_groups
+```
+
+```{r}
+sub_dam <- gdw_df |> 
+    filter(dam_type == 'Dam')
+gdw_df <- gdw_df |>
+    arrange(year_dam)
+```
+
+### Data Visualization
+
+```{r}
+# Bar plot
+gdw_df |> 
+    group_by(country) |> 
+    summarize(mean_dam_hgt = mean(dam_hgt_m, na.rm = TRUE)) |> 
+    ungroup() |> 
+    ggplot(
+        mapping = aes(
+            x = country,
+            y = mean_dam_hgt
+        )
+    ) + geom_bar(stat = "identity")
+
+```
+
+
+```{r}
+# Scatter Plot
+gdw_df |> 
+    ggplot(
+        mapping = aes(
+            x = cap_mcm,
+            y = dam_hgt_m
+        )
+    ) + geom_point()
+```
