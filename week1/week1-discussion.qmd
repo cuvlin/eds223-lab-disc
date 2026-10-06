@@ -1,0 +1,54 @@
+### 1. Get started
+
+```{r}
+library(here)
+library(tidyverse)
+library(sf)
+library(stars)
+library(tmap)
+```
+
+Loading in the Data
+
+
+```{r}
+ei_points <- st_read(here("week1", "data", "ei_points.gpkg")) |> 
+  filter(type == "volcano")
+ei_elev <- read_stars(here("week1","data", "ei_elev.tif"))
+ei_borders <- st_read(here("week1","data", "ei_border.gpkg"))
+ei_roads <- st_read(here("week1","data", "ei_roads.gpkg"))
+```
+
+### 2. Create a single object-map with `tmap`
+
+```{r}
+tm_shape(ei_borders) +
+    tm_borders() +
+```
+
+### 3. Create a multiple-object map with `tmap`
+
+
+```{r}
+tm_shape(ei_elev) +
+    tm_graticules() +
+    tm_raster(
+        col.scale = tm_scale_continuous(values = "-rd_yl_gn"),
+        col.legend = tm_legend("Elevation (m asl)")) +
+tm_shape(ei_borders) +
+    tm_borders() +
+tm_shape(ei_roads) +
+    tm_lines() +
+tm_shape(ei_points) +
+    tm_symbols(
+        shape = 24,
+        size = "elevation",
+        fill = "black",
+        size.legend = tm_legend("Volcanoes (m asl)") 
+    ) +
+tm_compass(position = c("right", "top")) +
+tm_title("Easter Island")
+```
+
+### 4. Create an interactive map with `tmap`
+
