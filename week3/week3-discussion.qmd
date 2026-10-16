@@ -1,0 +1,114 @@
+### Loading in data and packages
+```{r}
+library(here)
+library(tidyverse)
+library(sf)
+library(tmap)
+
+sb_protected_areas <- st_read(here(
+  "eds223-lab-disc/",
+  "data",
+  "week3_data",
+  "cpad_super_units_sb.shp"
+)) |>
+  st_transform("ESRI:102009")
+
+sb_city_boundaries <- st_read(here(
+  "eds223-lab-disc/",
+  "data",
+  "week3_data",
+  "sb_city_boundaries_2003.shp"
+)) |>
+  st_transform("ESRI:102009")
+
+sb_county_boundary <- st_read(here(
+  "eds223-lab-disc/",
+  "data",
+  "week3_data",
+  "sb_county_boundary_2020.shp"
+)) |>
+  st_transform("ESRI:102009")
+
+aves <- st_read(here(
+  "eds223-lab-disc/",
+  "data",
+  "week3_data",
+  "aves_observations_2020_2024.shp"
+)) |>
+  st_transform("ESRI:102009")
+```
+
+### 2. Find bird observations within PAs in Santa Barbara County
+
+- Subset and Join bird observation data
+```{r}
+birds_protected_join <- st_join(aves, sb_protected_areas) # spatial join
+
+birds_protected_subset <- sb_protected_areas[aves, ] # spatial subset
+
+tm_shape(sb_protected_areas) +
+  tm_fill() +
+  tm_borders() +
+  tm_shape(sb_county_boundary) +
+  tm_borders() +
+  tm_shape(sb_city_boundaries) +
+  tm_borders() +
+  tm_shape(birds_protected_subset) + # change this one to switch between subset and join
+  tm_dots()
+```
+
+- Make 5km buffer around the brotected areas and subset birds to bufferred region
+
+```{r}
+pa_5km_buffer <- st_buffer(sb_protected_areas, dist = units::set_units(5, "km"))
+
+tm_shape(sb_protected_areas) +
+  tm_fill() +
+  tm_borders() +
+  tm_shape(sb_county_boundary) +
+  tm_borders() +
+  tm_shape(sb_city_boundaries) +
+  tm_borders() +
+  tm_shape(pa_5km_buffer[aves, ]) +
+  tm_dots()
+```
+
+### 3. Find PAs within 15km of Goleta
+- Find the protected areas within 15km of a city in SB County
+
+```{r}
+goleta <- sb_city_boundaries |> filter(NAME == 'Goleta')
+goleta_15km_buffer <- st_buffer(goleta, dist = units::set_units(15, "km"))
+
+goleta_PAs_within <- st_within(sb_protected_areas, goleta_15km_buffer) # logical
+goleta_PAs_intersects <- st_intersects(sb_protected_areas, goleta_15km_buffer) # logical
+goleta_PAs_intersection <- st_intersection(
+  sb_protected_areas,
+  goleta_15km_buffer
+) # new geometry
+
+
+tm_shape(goleta_PAs_intersection) +
+  tm_fill() +
+  tm_borders()
+
+pa_join_goleta <- st_join(
+  sb_protected_areas,
+  goleta,
+  st_is_within_distance,
+  dist = units::set_units(15, "km")
+)
+```
+
+### 4. Find distance between Goleta and Dangermond Preserve
+
+```{r}
+# Subset PA to Dangermond Preserve
+dangermond <- sb_protected_areas |>
+  dplyr::filter(UNIT_NAME == "Jack and Laura Dangermond Preserve")
+```
+
+
+```{r}
+danger_dist <- st_distance(goleta, dangermond) # Compute the distance between geometries edges
+```
